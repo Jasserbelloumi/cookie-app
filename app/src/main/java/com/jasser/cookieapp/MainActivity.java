@@ -4,6 +4,7 @@ import android.content.Context;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.webkit.CookieManager;
+import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.widget.Button;
@@ -11,7 +12,6 @@ import android.widget.EditText;
 import androidx.appcompat.app.AppCompatActivity;
 
 public class MainActivity extends AppCompatActivity {
-    private EditText cookieInput;
     private SharedPreferences sharedPref;
 
     @Override
@@ -20,35 +20,43 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
 
         sharedPref = getPreferences(Context.MODE_PRIVATE);
-        cookieInput = findViewById(R.id.cookieInput);
+        EditText cookieInput = findViewById(R.id.cookieInput);
         Button btnJoin = findViewById(R.id.btnJoin);
 
-        // استرجاع الكوكيز المحفوظة سابقاً إن وجدت
-        String savedCookies = sharedPref.getString("last_cookies", "");
-        cookieInput.setText(savedCookies);
+        cookieInput.setText(sharedPref.getString("last_cookies", ""));
 
         btnJoin.setOnClickListener(v -> {
             String cookies = cookieInput.getText().toString();
-            // حفظ الكوكيز الجديدة
             sharedPref.edit().putString("last_cookies", cookies).apply();
-            injectCookiesAndOpen(cookies);
+            startFacebookSession(cookies);
         });
     }
 
-    private void injectCookiesAndOpen(String cookieString) {
-        CookieManager cookieManager = CookieManager.getInstance();
-        cookieManager.setAcceptCookie(true);
-        cookieManager.removeAllCookies(null);
-        
-        String[] pairs = cookieString.split(";");
-        for (String pair : pairs) {
-            cookieManager.setCookie("https://www.facebook.com", pair.trim());
-        }
-
+    private void startFacebookSession(String cookieString) {
         WebView webView = new WebView(this);
         setContentView(webView);
-        webView.getSettings().setJavaScriptEnabled(true);
-        webView.getSettings().setDomStorageEnabled(true);
+
+        WebSettings settings = webView.getSettings();
+        settings.setJavaScriptEnabled(true);
+        settings.setDomStorageEnabled(true);
+        // إيهام فيسبوك أنك تستخدم متصفح كمبيوتر أو هاتف حديث
+        settings.setUserAgentString("Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Mobile Safari/537.36");
+
+        CookieManager cookieManager = CookieManager.getInstance();
+        cookieManager.setAcceptCookie(true);
+        cookieManager.setAcceptThirdPartyCookies(webView, true);
+        cookieManager.removeAllCookies(null);
+
+        // تنظيف وحقن الكوكيز بشكل صحيح
+        String[] pairs = cookieString.split(";");
+        for (String pair : pairs) {
+            if (pair.contains("=")) {
+                cookieManager.setCookie("https://.facebook.com", pair.trim() + "; Domain=.facebook.com; Path=/; Secure; HttpOnly");
+            }
+        }
+
+        cookieManager.flush();
+        
         webView.setWebViewClient(new WebViewClient());
         webView.loadUrl("https://m.facebook.com");
     }
