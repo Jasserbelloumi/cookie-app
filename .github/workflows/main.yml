@@ -6,10 +6,6 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
-      - name: Get Date
-        id: get-date
-        run: echo "date=$(date +'%Y-%m-%d-%H;%M;%S')" >> $GITHUB_OUTPUT
-
       - name: Install Dependencies
         run: |
           sudo apt update
@@ -19,7 +15,8 @@ jobs:
       - name: Build with Buildozer
         run: |
           export PATH=$PATH:~/.local/bin
-          buildozer -v android debug
+          # هذا السطر هو السحر: يوافق على كل التراخيص قبل البدء
+          yes | buildozer -v android debug
           
       - name: Upload APK
         uses: actions/upload-artifact@v4
