@@ -1,14 +1,23 @@
-apply plugin: 'com.android.application'
+plugins {
+    id 'com.android.application'
+}
 
 android {
     namespace 'com.jasser.cookieapp'
     compileSdk 33
+
     defaultConfig {
         applicationId "com.jasser.cookieapp"
         minSdk 24
         targetSdk 33
         versionCode 1
         versionName "1.0"
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+        }
     }
 }
 
